@@ -49,7 +49,7 @@ pub fn os_codename() -> Result<String> {
 /// See <https://github.com/freedomofpress/securedrop/issues/7316>.
 fn check_ssh_group() -> Result<bool> {
     // There are no clean bindings to getgrpname in rustix,
-    // so jut shell out to getent to get group members
+    // so just shell out to getent to get group members
     let output = process::Command::new("getent")
         .arg("group")
         .arg("ssh")
