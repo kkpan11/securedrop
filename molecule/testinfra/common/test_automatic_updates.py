@@ -162,6 +162,13 @@ def test_unattended_upgrades_functional(host):
     assert expected_result in c.stdout
 
 
+def test_fixed_phasing(host):
+    """Verify APT's machine-id is set to a fixed value for consistent phasing"""
+    cmd = host.run("apt-config dump APT::Machine-ID")
+    assert cmd.rc == 0
+    assert cmd.stdout.startswith('APT::Machine-ID "1ebf')
+
+
 @pytest.mark.parametrize(
     "service",
     [

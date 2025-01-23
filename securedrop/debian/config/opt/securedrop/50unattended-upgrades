@@ -66,3 +66,7 @@ Dpkg::Options {
     "--force-confdef";
     "--force-confold";
 }
+
+// Set a fixed machine-id to ensure phased updates are consistent across all instances
+// see <https://discourse.ubuntu.com/t/phased-updates-in-apt-in-21-04/20345>.
+APT::Machine-ID "1ebf5f15850c540b3142f1584bdd496d";
