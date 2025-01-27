@@ -142,13 +142,11 @@ def test_no_ecrypt_messages_in_logs(host, logfile):
     Ensure pam_ecryptfs is removed from /etc/pam.d/common-auth : not only is
     no longer needed, it causes error messages (see issue #3963)
     """
-    error_message = "pam_ecryptfs.so: cannot open shared object file"
+    # re.escape will encode the . as `\.` so the regex will not match the log entry itself
+    error_message = re.escape("pam_ecryptfs.so: cannot open shared object file")
     with host.sudo():
-        f = host.file(logfile)
-        # Not using `f.contains(<pattern>)` because that'd cause the sought
-        # string to make it into syslog as a side-effect of the testinfra
-        # invocation, causing subsequent test runs to report failure.
-        assert error_message not in f.content_string
+        cmd = host.run(f"grep '{error_message}' {logfile}")
+        assert cmd.rc == 1, f"error message found in {logfile}: {cmd.stdout}"
 
 
 @pytest.mark.parametrize(
