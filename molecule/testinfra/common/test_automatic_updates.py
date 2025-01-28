@@ -154,12 +154,18 @@ def test_unattended_upgrades_functional(host):
         f" origin=Ubuntu,archive={distro}, origin=Ubuntu,archive={distro}-security"
         f", origin=Ubuntu,archive={distro}-updates, origin=SecureDrop,codename={distro}"
     )
-    expected_result = (
-        "No packages found that can be upgraded unattended and no pending auto-removals"
-    )
 
+    all_good = "No packages found that can be upgraded unattended and no pending auto-removals"
     assert expected_origins in c.stdout
-    assert expected_result in c.stdout
+    if distro == "focal":
+        assert all_good in c.stdout
+    else:  # noqa: PLR5501
+        if all_good in c.stdout:
+            assert all_good in c.stdout
+        else:
+            # noble+ uses phased updates, so there may be packages that can be
+            # upgraded that won't be upgraded; look for a different message in that case
+            assert "left to upgrade set()\nAll upgrades installed" in c.stdout
 
 
 def test_fixed_phasing(host):
