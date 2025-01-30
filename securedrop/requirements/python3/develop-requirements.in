@@ -18,7 +18,6 @@ molecule-vagrant>=1,<2
 # Needed for ansible network filter
 # http://docs.ansible.com/ansible/latest/playbooks_filters_ipaddr.html
 netaddr
-pip>=24.2
 polib
 prompt_toolkit==2.0.9
 psutil>=5.6.6
@@ -44,3 +43,7 @@ urllib3>=1.26.5
 uv
 yamllint
 zizmor
+
+# If this needs updating, search this repository for other references to "pip"
+# that may be missed by our tools.
+pip>=25  # Safety 75180

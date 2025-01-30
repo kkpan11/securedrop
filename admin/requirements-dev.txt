@@ -207,9 +207,9 @@ virtualenv==20.25.0 \
     # via tox
 
 # The following packages are considered to be unsafe in a requirements file:
-pip==21.1.1 \
-    --hash=sha256:11d095ed5c15265fc5c15cc40a45188675c239fb0f9913b673a33e54ff7d45f0 \
-    --hash=sha256:51ad01ddcd8de923533b01a870e7b987c2eb4d83b50b89e1bf102723ff9fed8b
+pip==25.0 \
+    --hash=sha256:8e0a97f7b4c47ae4a494560da84775e9e2f671d415d8d828e052efefb206b30b \
+    --hash=sha256:b6eb97a803356a52b2dd4bb73ba9e65b2ba16caa6bcb25a7497350a4e5859b65
     # via
     #   -r requirements-dev.in
     #   pip-tools

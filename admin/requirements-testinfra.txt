@@ -329,6 +329,7 @@ six==1.16.0 \
     --hash=sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254
     # via
     #   -r requirements.in
+    #   paramiko
     #   prompt-toolkit
 testinfra==5.3.1 \
     --hash=sha256:9d3a01fb787253df76ac4ab46d18a84d4b01be877ed1b5812e590dcf480a627e \
