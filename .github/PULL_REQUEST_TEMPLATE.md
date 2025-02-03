@@ -50,7 +50,11 @@ Choose one of the following:
 
 ### If you added or updated a reference to a production code dependency:
 
-Production code dependencies are defined in:
+[*Documentation*](https://developers.securedrop.org/en/latest/dependency_updates.html)
+
+**For Rust code,** dependency review is enforced by the [cargo-vet](https://github.com/freedomofpress/securedrop/actions/workflows/cargo-vet.yml) CI job.
+
+**For Python code,** production code dependencies are defined in:
 
 - `admin/requirements.in`
 - `admin/requirements-ansible.in`
