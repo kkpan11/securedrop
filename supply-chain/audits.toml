@@ -109,6 +109,16 @@ who = "Kunal Mehta <legoktm@debian.org>"
 criteria = "safe-to-run"
 version = "0.6.3"
 
+[[audits.openssl]]
+who = "Cory Francis Myers <cory@freedom.press>"
+criteria = "safe-to-run"
+delta = "0.10.68 -> 0.10.70"
+
+[[audits.openssl-sys]]
+who = "Cory Francis Myers <cory@freedom.press>"
+criteria = "safe-to-run"
+delta = "0.9.104 -> 0.9.105"
+
 [[audits.petgraph]]
 who = "Kunal Mehta <legoktm@debian.org>"
 criteria = "safe-to-run"
