@@ -269,6 +269,7 @@ case "$1" in
     # mode.
     a2dissite 000-default
     a2dissite default-ssl
+    rm -rf /var/www/html
     # Stop Apache service while we make changes. This is primarily for
     # AppArmor (if the Apache service is running unconfined, and the profile is
     # set to "enforce", then apache2 will fail to restart, since it lacks
@@ -311,8 +312,13 @@ case "$1" in
     database_migration
 
     # Restart apache now that we've updated everything, setup AppArmor
-    # and applied all migrations
-    service apache2 restart
+    # and applied all migrations. While the Noble migration is in progress, the service unit is masked and must not be restarted.
+    apache2_status=$(systemctl is-enabled apache2 2>/dev/null ||:)
+    if [ "$apache2_status" != "masked" ]; then
+        systemctl restart apache2
+    else
+        echo "apache2 is masked, skipping restart"
+    fi
 
     ;;
 
