@@ -1,0 +1,92 @@
+---
+
+- name: Check host's migration state
+  ansible.builtin.slurp:
+    src: /etc/securedrop-noble-migration-state.json
+  register: migration_json
+  ignore_errors: yes
+
+- name: Skip migration if already done
+  set_fact:
+    already_finished: "{{ not migration_json.failed and (migration_json.content | b64decode | from_json)['finished'] == 'Done' }}"
+
+- name: Perform migration
+  when: not already_finished
+  block:
+    - name: Instruct upgrade to begin
+      ansible.builtin.copy:
+        # It's okay to enable both app and mon here to simplify the logic,
+        # as this only affects the server the file is updated on.
+        content: |
+          {
+            "app": {"enabled": true, "bucket": 5},
+            "mon": {"enabled": true, "bucket": 5}
+          }
+        dest: /usr/share/securedrop/noble-upgrade.json
+
+    # Start the systemd service manually to avoid waiting for the timer to pick it up
+    - name: Start upgrade systemd service
+      ansible.builtin.systemd:
+        name: securedrop-noble-migration-upgrade
+        state: started
+
+    # Wait until we've finished the PendingUpdates stage. It's highly unlikely
+    # we'll ever successfully complete this stage because as soon as the script
+    # reaches finishes that stage, it reboots. Most likely this step will fail
+    # as unreachable, which we ignore and wait_for_connection.
+    - name: Wait for pending updates to be applied
+      ansible.builtin.wait_for:
+        path: /etc/securedrop-noble-migration-state.json
+        search_regex: '"finished":"PendingUpdates"'
+        sleep: 1
+        timeout: 300
+      ignore_unreachable: yes
+      ignore_errors: yes
+
+    - name: Wait for the first reboot
+      ansible.builtin.wait_for_connection:
+        connect_timeout: 20
+        sleep: 5
+        delay: 10
+        timeout: 300
+
+    # Start the systemd service manually to avoid waiting for the timer to pick it up
+    - name: Resume upgrade systemd service
+      ansible.builtin.systemd:
+        name: securedrop-noble-migration-upgrade
+        state: started
+
+    - debug:
+        msg: "The upgrade is in progress; it may take up to 30 minutes."
+
+    # Same as above, this will most likely fail as unreachable when the server
+    # actually reboots.
+    - name: Wait for system upgrade to noble
+      ansible.builtin.wait_for:
+        path: /etc/securedrop-noble-migration-state.json
+        search_regex: '"finished":"Reboot"'
+        sleep: 5
+        # Should finish in less than 30 minutes
+        timeout: 1800
+      ignore_unreachable: yes
+      ignore_errors: yes
+
+    - name: Wait for the second reboot
+      ansible.builtin.wait_for_connection:
+        connect_timeout: 20
+        sleep: 5
+        delay: 10
+        timeout: 300
+
+    - name: Re-resume upgrade systemd service
+      ansible.builtin.systemd:
+        name: securedrop-noble-migration-upgrade
+        state: started
+
+    # This final check should actually succeed.
+    - name: Wait for migration to complete
+      ansible.builtin.wait_for:
+        path: /etc/securedrop-noble-migration-state.json
+        search_regex: '"finished":"Done"'
+        sleep: 5
+        timeout: 300
