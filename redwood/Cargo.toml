@@ -16,3 +16,7 @@ thiserror = "1.0.31"
 
 [dev-dependencies]
 tempfile = "3.3.0"
+
+[lints.rust]
+# can be removed once we upgrade to pyo3 >= 0.23
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(addr_of)'] }

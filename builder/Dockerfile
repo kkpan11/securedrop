@@ -1,8 +1,5 @@
-FROM ubuntu:focal
-
-# additional meta-data makes it easier to clean up, find
-LABEL org="Freedom of the Press"
-LABEL image_name="focal-sd-builder-app"
+ARG UBUNTU_VERSION=focal
+FROM ubuntu:${UBUNTU_VERSION}
 
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get -y update && apt-get upgrade -y && apt-get install -y \
@@ -11,7 +8,6 @@ RUN apt-get -y update && apt-get upgrade -y && apt-get install -y \
         debhelper \
         devscripts \
         dh-python \
-        dh-systemd \
         gdb \
         git \
         gnupg2 \
@@ -27,16 +23,15 @@ RUN apt-get -y update && apt-get upgrade -y && apt-get install -y \
         python3-venv \
         python3-virtualenv \
         rsync \
-        sqlite \
         sudo \
         tzdata \
         libevent-dev \
         unzip \
         zlib1g-dev
 
-ENV RUST_VERSION 1.81.0
-ENV RUSTUP_VERSION 1.24.3
-ENV RUSTUP_INIT_SHA256 3dc5ef50861ee18657f9db2eeb7392f9c2a6c95c90ab41e45ab4ca71476b4338
+ENV RUST_VERSION 1.84.1
+ENV RUSTUP_VERSION 1.27.1
+ENV RUSTUP_INIT_SHA256 6aeece6993e902708983b209d04c0d1dbb14ebb405ddb87def578d41f920f56d
 ENV RUSTUP_HOME /opt/rustup
 ENV CARGO_HOME /opt/cargo
 
@@ -59,4 +54,5 @@ RUN gpg --import /tmp/OSSEC-ARCHIVE-KEY.asc && gpg --export > /ossec.gpg \
 
 COPY build-debs-ossec.sh /build-debs-ossec
 COPY build-debs-securedrop.sh /build-debs-securedrop
+COPY fixup-changelog.sh /fixup-changelog
 COPY dep-check.sh /dep-check

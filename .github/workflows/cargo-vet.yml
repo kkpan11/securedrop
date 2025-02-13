@@ -9,11 +9,13 @@ jobs:
     name: Vet Dependencies
     runs-on: ubuntu-latest
     # Keep version in sync with rust-toolchain.toml
-    container: rust:1.81.0
+    container: rust:1.84.1
     env:
-      CARGO_VET_VERSION: 0.9.0
+      CARGO_VET_VERSION: 0.10.0
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
     - uses: actions/cache@v4
       id: cache-vet
       with:

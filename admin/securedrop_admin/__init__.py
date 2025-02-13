@@ -66,7 +66,7 @@ I18N_DEFAULT_LOCALES = {"en_US"}
 # Check OpenSSH version - ansible requires an extra argument for scp on OpenSSH 9
 def openssh_version() -> int:
     try:
-        result = subprocess.run(["ssh", "-V"], capture_output=True, text=True)
+        result = subprocess.run(["ssh", "-V"], capture_output=True, text=True, check=False)
         if result.stderr.startswith("OpenSSH_9"):
             return 9
         elif result.stderr.startswith("OpenSSH_8"):
@@ -75,7 +75,6 @@ def openssh_version() -> int:
             return 0
     except subprocess.CalledProcessError:
         return 0
-        pass
     return 0
 
 
@@ -130,14 +129,14 @@ class SiteConfig:
 
     class ValidateTime(Validator):
         def validate(self, document: Document) -> bool:
-            if document.text.isdigit() and int(document.text) in range(0, 24):
+            if document.text.isdigit() and int(document.text) in range(24):
                 return True
             raise ValidationError(message="Must be an integer between 0 and 23")
 
     class ValidateUser(Validator):
         def validate(self, document: Document) -> bool:
             text = document.text
-            if text != "" and text != "root" and text != "amnesia":
+            if text not in ("", "root", "amnesia"):
                 return True
             raise ValidationError(message="Must not be root, amnesia or an empty string")
 
@@ -160,8 +159,8 @@ class SiteConfig:
                 raise ValidationError(
                     message=(
                         "DNS server(s) should be a space/comma-separated list "
-                        "of up to {} IP addresses"
-                    ).format(MAX_NAMESERVERS)
+                        f"of up to {MAX_NAMESERVERS} IP addresses"
+                    )
                 )
             return True
 
@@ -194,7 +193,7 @@ class SiteConfig:
     class ValidateYesNo(Validator):
         def validate(self, document: Document) -> bool:
             text = document.text.lower()
-            if text == "yes" or text == "no":
+            if text in ("yes", "no"):
                 return True
             raise ValidationError(message="Must be either yes or no")
 
@@ -305,7 +304,7 @@ class SiteConfig:
         self.desc: List[_DescEntryType] = [
             (
                 "ssh_users",
-                "sd",
+                "sdadmin",
                 str,
                 "Username for SSH access to the servers",
                 SiteConfig.ValidateUser(),
@@ -769,7 +768,6 @@ def update_check_required(cmd_name: str) -> Callable[[_FuncT], _FuncT]:
 
             update_status, latest_tag = check_for_updates(cli_args)
             if update_status is True:
-
                 # Useful for troubleshooting
                 branch_status = get_git_branch(cli_args)
 
@@ -793,7 +791,7 @@ def update_check_required(cmd_name: str) -> Callable[[_FuncT], _FuncT]:
                 )
                 sdlog.error(
                     "If you are certain you want to proceed, run:\n\n\t"
-                    "./securedrop-admin --force {}\n".format(cmd_name)
+                    f"./securedrop-admin --force {cmd_name}\n"
                 )
                 sdlog.error("To apply the latest updates, run:\n\n\t" "./securedrop-admin update\n")
                 sdlog.error(
@@ -1068,31 +1066,24 @@ def update(args: argparse.Namespace) -> int:
             and len(good_sig_matches) == 1
             and bad_sig_text not in sig_result
         ):
-            # Finally, we check that there is no branch of the same name
-            # prior to reporting success.
+            # Check for duplicate branch name
             cmd = ["git", "show-ref", "--heads", "--verify", f"refs/heads/{latest_tag}"]
             try:
-                # We expect this to produce a non-zero exit code, which
-                # will produce a subprocess.CalledProcessError
                 subprocess.check_output(cmd, stderr=subprocess.STDOUT, cwd=args.root)
-                sdlog.info("Signature verification failed.")
+                sdlog.error("Update failed: Branch name collision detected")
                 return 1
             except subprocess.CalledProcessError as e:
                 if "not a valid ref" in e.output.decode("utf-8"):
-                    # Then there is no duplicate branch.
                     sdlog.info("Signature verification successful.")
-                else:  # If any other exception occurs, we bail.
-                    sdlog.info("Signature verification failed.")
+                else:
+                    sdlog.error("Update failed: Git command error")
                     return 1
-        else:  # If anything else happens, fail and exit 1
-            sdlog.info("Signature verification failed.")
+        else:
+            sdlog.error("Update failed: Invalid signature format")
             return 1
 
     except subprocess.CalledProcessError:
-        # If there is no signature, or if the signature does not verify,
-        # then git tag -v exits subprocess.check_output will exit 1
-        # and subprocess.check_output will throw a CalledProcessError
-        sdlog.info("Signature verification failed.")
+        sdlog.error("Update failed: Missing or invalid signature")
         return 1
 
     # Only if the proper signature verifies do we check out the latest
@@ -1116,6 +1107,19 @@ def get_logs(args: argparse.Namespace) -> int:
         "Please send the encrypted logs to securedrop@freedom.press or "
         "upload them to the SecureDrop support portal: " + SUPPORT_URL
     )
+    return 0
+
+
+@update_check_required("noble_migration")
+def noble_migration(args: argparse.Namespace) -> int:
+    """Upgrade to Ubuntu Noble"""
+    sdlog.info("Beginning the upgrade to Ubuntu Noble")
+    ansible_cmd = ansible_command() + [
+        os.path.join(args.ansible_path, "securedrop-noble-migration.yml"),
+    ]
+
+    subprocess.check_call(ansible_cmd, cwd=args.ansible_path)
+    sdlog.info("Upgrade to Ubuntu Noble complete!")
     return 0
 
 
@@ -1217,6 +1221,9 @@ def parse_argv(argv: List[str]) -> argparse.Namespace:
 
     parse_logs = subparsers.add_parser("logs", help=get_logs.__doc__)
     parse_logs.set_defaults(func=get_logs)
+
+    parse_noble_migration = subparsers.add_parser("noble_migration", help=noble_migration.__doc__)
+    parse_noble_migration.set_defaults(func=noble_migration)
 
     parse_reset_ssh = subparsers.add_parser("reset_admin_access", help=reset_admin_access.__doc__)
     parse_reset_ssh.set_defaults(func=reset_admin_access)

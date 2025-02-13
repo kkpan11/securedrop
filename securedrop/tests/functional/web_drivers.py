@@ -13,6 +13,7 @@ from selenium import webdriver
 from selenium.webdriver.firefox.webdriver import WebDriver
 from selenium.webdriver.remote.remote_connection import LOGGER
 from tbselenium.tbdriver import TorBrowserDriver
+from tbselenium.utils import set_tbb_pref
 
 _LOGFILE_PATH = abspath(join(dirname(realpath(__file__)), "../log/driver.log"))
 _FIREFOX_PATH = "/usr/bin/firefox/firefox"
@@ -41,7 +42,7 @@ def _create_torbrowser_driver(
 ) -> TorBrowserDriver:
     logging.info("Creating TorBrowserDriver")
     log_file = open(_LOGFILE_PATH, "a")
-    log_file.write("\n\n[%s] Running Functional Tests\n" % str(datetime.now()))
+    log_file.write(f"\n\n[{datetime.now()}] Running Functional Tests\n")
     log_file.flush()
 
     # Don't use Tor when reading from localhost, and turn off private
@@ -54,8 +55,6 @@ def _create_torbrowser_driver(
         "network.proxy.no_proxies_on": "127.0.0.1",
         "browser.privatebrowsing.autostart": False,
     }
-    if accept_languages is not None:
-        pref_dict["intl.accept_languages"] = accept_languages
 
     Path(_TBB_PATH).mkdir(parents=True, exist_ok=True)
     torbrowser_driver = None
@@ -67,6 +66,12 @@ def _create_torbrowser_driver(
                 pref_dict=pref_dict,
                 tbb_logfile_path=_LOGFILE_PATH,
             )
+            if accept_languages is not None:
+                # privacy.spoof_english per
+                # <https://github.com/arkenfox/user.js/issues/1827#issuecomment-2075819482>.
+                set_tbb_pref(torbrowser_driver, "privacy.spoof_english", 1)
+                set_tbb_pref(torbrowser_driver, "intl.locale.requested", accept_languages)
+
             logging.info("Created Tor Browser web driver")
             torbrowser_driver.set_window_position(0, 0)
             torbrowser_driver.set_window_size(*_BROWSER_SIZE)
@@ -79,6 +84,10 @@ def _create_torbrowser_driver(
     if not torbrowser_driver:
         raise Exception("Could not create Tor Browser web driver")
 
+    # Add this attribute to the returned driver object so that tests using this
+    # fixture can know what locale it's parameterized with.
+    torbrowser_driver.locale = accept_languages  # type: ignore[attr-defined]
+
     return torbrowser_driver
 
 
@@ -87,14 +96,10 @@ def _create_firefox_driver(
 ) -> webdriver.Firefox:
     logging.info("Creating Firefox web driver")
 
-    profile = webdriver.FirefoxProfile()
-    if accept_languages is not None:
-        profile.set_preference("intl.accept_languages", accept_languages)
-        profile.update_preferences()
-
     firefox_options = webdriver.FirefoxOptions()
     firefox_options.binary_location = _FIREFOX_PATH
-    firefox_options.profile = profile
+    if accept_languages is not None:
+        firefox_options.set_preference("intl.accept_languages", accept_languages)
 
     firefox_driver = None
     for i in range(_DRIVER_RETRY_COUNT):
@@ -111,6 +116,10 @@ def _create_firefox_driver(
 
     if not firefox_driver:
         raise Exception("Could not create Firefox web driver")
+
+    # Add this attribute to the returned driver object so that tests using this
+    # fixture can know what locale it's parameterized with.
+    firefox_driver.locale = accept_languages  # type: ignore[attr-defined]
 
     return firefox_driver
 

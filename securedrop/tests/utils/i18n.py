@@ -16,8 +16,9 @@ from sdconfig import SecureDropConfig
 
 @functools.lru_cache(maxsize=None)
 def get_test_locales(default_locale: str = "en_US") -> List[str]:
-    locales = set(os.environ.get("TEST_LOCALES", "ar en_US").split())
-    locales.add(default_locale)
+    locales = set(os.environ.get("TEST_LOCALES", "ar").split())
+    if default_locale:
+        locales.add(default_locale)
     return sorted(list(locales))
 
 

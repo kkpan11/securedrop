@@ -10,9 +10,11 @@ jobs:
   rust-audit:
     runs-on: ubuntu-latest
     # Keep version in sync with rust-toolchain.toml
-    container: rust:1.81.0
+    container: rust:1.84.1
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Check Rust dependencies
         run: |
           make rust-audit
@@ -21,6 +23,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: '3.8'

@@ -12,7 +12,7 @@ pub(crate) struct Helper<'a> {
     pub(crate) passphrase: &'a Password,
 }
 
-impl<'a> VerificationHelper for Helper<'a> {
+impl VerificationHelper for Helper<'_> {
     fn get_certs(
         &mut self,
         _ids: &[sequoia_openpgp::KeyHandle],
@@ -32,7 +32,7 @@ impl<'a> VerificationHelper for Helper<'a> {
     }
 }
 
-impl<'a> DecryptionHelper for Helper<'a> {
+impl DecryptionHelper for Helper<'_> {
     fn decrypt<D>(
         &mut self,
         pkesks: &[sequoia_openpgp::packet::PKESK],
